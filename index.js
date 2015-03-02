@@ -18,7 +18,7 @@ function setupRoutes (client, done) {
   app.get('/stat', function (req, res) {
     runQuery(client, done, "SELECT max(brewed_at) from freshpots; SELECT count(*) FROM freshpots where brewed_at >= now()::date + interval '1h'; SELECT count(*) FROM freshpots;", function(err, result) {
       if (err) {
-        sendError(err)
+        sendError(err, res)
       } else {
         var mostRecent = result.rows[0].max;
         var displayMostRecent = moment(mostRecent).fromNow();
@@ -34,9 +34,9 @@ function setupRoutes (client, done) {
   app.post('/freshpots', function (req, res) {
     runQuery(client, done, 'INSERT INTO freshpots values (now());', function(err, result) {
       if (err) {
-        sendError(err)
+        sendError(err, res)
       } else {
-        res.send(err, result);
+        res.json(result)
       }
     });
   });
@@ -50,11 +50,10 @@ function runQuery (client, done, query, cb) {
   client.query(query, function(err, result) {
     done();
     cb(err, result);
-    client.end();
   });
 }
 
-function sendError (err) {
+function sendError (err, res) {
   console.log(err);
   res.send(err);
 }
