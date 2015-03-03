@@ -4,22 +4,23 @@ var pg = require('pg');
 var conString = process.env.DATABASE_URL;
 var moment = require('moment')
 
-
-pg.connect(conString, function(err, client, done) {
-  console.log(conString);
+var client = new pg.Client(conString);
+client.connect(function(err) {
   if(err) {
     return console.error('error fetching client from pool', err);
+  } else {
+    setupRoutes(client);
   }
-  setupRoutes(client, done);
 });
 
 
-function setupRoutes (client, done) {
+function setupRoutes (client) {
   app.get('/stat', function (req, res) {
-    runQuery(client, done, "SELECT max(brewed_at) from freshpots; SELECT count(*) FROM freshpots where brewed_at >= now()::date + interval '1h'; SELECT count(*) FROM freshpots;", function(err, result) {
+    runQuery(client, "SELECT max(brewed_at) from freshpots; SELECT count(*) FROM freshpots where brewed_at >= now()::date + interval '1h'; SELECT count(*) FROM freshpots;", function(err, result) {
       if (err) {
         sendError(err, res)
       } else {
+        console.log("Result of stat %s \n", JSON.stringify(result));
         var mostRecent = result.rows[0].max;
         var displayMostRecent = moment(mostRecent).fromNow();
         res.json({
@@ -32,10 +33,11 @@ function setupRoutes (client, done) {
   });
 
   app.post('/freshpots', function (req, res) {
-    runQuery(client, done, 'INSERT INTO freshpots values (now());', function(err, result) {
+    runQuery(client, 'INSERT INTO freshpots values (now());', function(err, result) {
       if (err) {
         sendError(err, res)
       } else {
+        console.log("Result of freshports %s \n", JSON.stringify(result));
         res.json(result)
       }
     });
@@ -46,9 +48,8 @@ function setupRoutes (client, done) {
   });
 }
 
-function runQuery (client, done, query, cb) {
+function runQuery (client, query, cb) {
   client.query(query, function(err, result) {
-    done();
     cb(err, result);
   });
 }
