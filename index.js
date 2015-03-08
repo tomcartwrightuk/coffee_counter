@@ -1,7 +1,7 @@
 var app = require('express')();
 var port = process.env.PORT || 3040;
 var pg = require('pg');
-var conString = process.env.DATABASE_URL;
+var conString = process.env.DATABASE_URL + '?ssl=true';
 var moment = require('moment')
 
 var client = new pg.Client(conString);
